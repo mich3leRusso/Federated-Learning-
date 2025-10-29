@@ -12,7 +12,7 @@
 # Add conda to source
 source /archive/apps/miniconda/miniconda3/py312_2/etc/profile.d/conda.sh
 # Conda activate
-conda activate env_9
+conda activate MIND
 
 class_augmentation=2  #multiplier of the number of classes
 aug_type="rotations"   #rotations, negative, mix
@@ -41,7 +41,7 @@ fi
 if [ "$train_model" -eq 1 ]; then
   for seed in $(seq 0 $((n_seed-1)))
   do
-      python /davinci-1/home/dmor/PycharmProjects/Refactoring_MIND/main.py --run_name $run_name \
+      python federated_main.py --run_name $run_name \
               --dataset "CIFAR100" \
               --cuda 0 \
               --seed $seed \
@@ -57,23 +57,24 @@ if [ "$train_model" -eq 1 ]; then
               --class_augmentation $class_augmentation \
               --aug_type $aug_type \
               --control $control \
-              --control_ttda $control_ttda
+              --control_ttda $control_ttda \
+              --n_clients 2
   done
 fi
 
-n_seed=10
+# n_seed=10
 
-python /davinci-1/home/dmor/PycharmProjects/Refactoring_MIND/test_time_data_augmentation.py --run_name $run_name \
-        --dataset "CIFAR100" \
-        --cuda 0 \
-        --seed $((n_seed-1))\
-        --n_experiences 10 \
-        --model "gresnet32" \
-        --temperature 6.5 \
-        --class_augmentation $class_augmentation \
-        --aug_type $aug_type \
-        --with_rotations $rotations \
-        --n_aug $n_aug \
-        --control $control \
-        --control_2 $control_2 \
-        --softmax_later 0
+# python /davinci-1/home/dmor/PycharmProjects/Refactoring_MIND/test_time_data_augmentation.py --run_name $run_name \
+#         --dataset "CIFAR100" \
+#         --cuda 0 \
+#         --seed $((n_seed-1))\
+#         --n_experiences 10 \
+#         --model "gresnet32" \
+#         --temperature 6.5 \
+#         --class_augmentation $class_augmentation \
+#         --aug_type $aug_type \
+#         --with_rotations $rotations \
+#         --n_aug $n_aug \
+#         --control $control \
+#         --control_2 $control_2 \
+#         --softmax_later 0

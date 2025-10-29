@@ -9,3 +9,5 @@ plot_comparison.py
 plot_experiment.py
 plot_paper.py 
 LICENSE
+logs/
+__pycache__/

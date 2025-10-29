@@ -86,7 +86,7 @@ class MIND():
                 with open(f"logs/{args.run_name}/results/loss.csv", "a") as f:
                     f.write(f"{self.experience_idx},{self.distillation},{epoch},{loss_ce:.4f},{loss_distill:.4f}\n")
                 with open(f"logs/{args.run_name}/results/acc.csv", "a") as f:
-                    acc_train, acc_test = test_during_training(self.pruner,
+                    acc_train = test_during_training(self.pruner,
                                                                self.train_dataloader,
                                                                self.val_dataloader,
                                                                self.model,
@@ -97,7 +97,7 @@ class MIND():
                                                                self.distillation,
                                                                plot=True)
 
-                    f.write(f"{self.experience_idx},{self.distillation},{epoch},{acc_train:.4f},{acc_test:.4f}\n")
+                    f.write(f"{self.experience_idx},{self.distillation},{epoch},{acc_train:.4f}\n")
                 #print loss
                 #print(f"loss_ce: {loss_ce:.4f}, loss_distill: {loss_distill:.4f}")
 

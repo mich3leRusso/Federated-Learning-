@@ -179,18 +179,18 @@ def test_during_training(pruner, train_dloader, test_dloader, model, fresh_model
 
     with torch.no_grad():
         train_conf_mat = test_single_exp(pruner, model, train_dloader, exp_idx, distillation)
-        test_conf_mat = test_single_exp(pruner, model, test_dloader, exp_idx, distillation)
+       # test_conf_mat = test_single_exp(pruner, model, test_dloader, exp_idx, distillation)
         # compute accuracy
         train_acc = train_conf_mat.diag().sum() / train_conf_mat.sum()
-        test_acc = test_conf_mat.diag().sum() / test_conf_mat.sum()
-        print(f"    e:{epoch:03}, tr_acc:{train_acc:.4f}, te_acc:{test_acc:.4f} lr:{scheduler.get_last_lr()[0]:.5f}")
+      #  test_acc = test_conf_mat.diag().sum() / test_conf_mat.sum()
+        print(f"    e:{epoch:03}, tr_acc:{train_acc:.4f}, lr:{scheduler.get_last_lr()[0]:.5f}")
 
-        if plot:
-            plt_confmats(args.run_name, train_conf_mat, test_conf_mat, distillation, exp_idx)
+        # if plot:
+        #     plt_confmats(args.run_name, train_conf_mat, test_conf_mat, distillation, exp_idx)
 
     model.train()
 
-    return train_acc, test_acc
+    return train_acc
 
 
 def confidence(frag_preds, task_id):
