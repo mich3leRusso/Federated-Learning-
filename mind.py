@@ -81,7 +81,7 @@ class MIND():
 
             if self.scheduler:
                 self.scheduler.step()
-
+            
             if (epoch) % self.log_every == 0 or epoch+1 == self.train_epochs:
                 with open(f"logs/{args.run_name}/results/loss.csv", "a") as f:
                     f.write(f"{self.experience_idx},{self.distillation},{epoch},{loss_ce:.4f},{loss_distill:.4f}\n")
@@ -163,7 +163,10 @@ class MIND():
             self.loss = torch.tensor(0.).to(args.device)
             self.loss_ce = torch.tensor(0.).to(args.device)
             self.loss_distill = torch.tensor(0.).to(args.device)
+            print(self.experience_idx)
+            input()
             self.mb_output = self.model.forward(self.mb_x.to(args.device))
+
 
             if args.distill_beta > 0:
                 self.loss_distill = args.distill_beta*self.get_distill_loss_JS()

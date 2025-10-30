@@ -80,7 +80,9 @@ class Pruner(object):
         n_modules = len([m for m in model.modules()])
         for module_idx, (module, distill_module) in enumerate(zip(model.modules(), distill_model.modules())):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+               #put into the device  
                 self.masks[module_idx] = self.masks[module_idx].to(module.weight.device)
+
                 #if it is the last layer, assign to the mask only the weights connecting to the new classes
                 if module_idx == n_modules-2 and args.dataset != 'CORE50' and not args.self_distillation:
                     subset = torch.zeros_like(self.masks[module_idx])
@@ -91,18 +93,18 @@ class Pruner(object):
                     #convert subset to bool
                     subset = subset.to(torch.bool)
                 else:
-                    if args.self_distillation:
+                    if args.self_distillation:#praticamente mai 
                         subset= self.most_important_weights_mask(module.weight, self.masks[module_idx])
                     else:
                         subset= self.select_random_weights(module.weight, self.masks[module_idx])
-                self.masks[module_idx][subset] = experience_idx
+                self.masks[module_idx][subset] = experience_idx ### Set the assigned subset to the same task id  
 
                 #when self distillation, set fresh model weights as starting point
-                if self_distillation:
+                if self_distillation:#questo parametro è il candidato per la modifica 2  
                     module.weight[self.masks[module_idx] == experience_idx] = distill_module.weight[self.masks[module_idx] == experience_idx]
                 
 
-                # Set unassigned weights to 0   
+                # Set unassigned weights to 0 
                 module.weight[self.masks[module_idx] == -1] = 0.0
                 if not self_distillation:
                     if not args.weight_sharing:
@@ -127,15 +129,19 @@ class Pruner(object):
 
 
     def set_gating_masks(self, model, task_id, weight_sharing, distillation):
+        
         # set the mask for each layer
+        #when teacher distillation False
+        # when student distillation True 
+        
         for module_idx, module in enumerate(model.modules()):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
                 layer_mask = self.masks[module_idx]
                 if distillation:
-                    if weight_sharing:
+                    if weight_sharing: #in mind tipically true, for student   
                         module.mask = torch.logical_and(layer_mask <= task_id, layer_mask != -1).to(module.weight.device)
                     else:
                         module.mask = (layer_mask == task_id).to(torch.float32).to(module.weight.device)
-                else:
+                else:#for the teacher  
                     module.mask = torch.ones_like(module.mask).to(torch.float32).to(module.weight.device)
 

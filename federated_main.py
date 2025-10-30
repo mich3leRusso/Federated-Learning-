@@ -224,9 +224,30 @@ def main():
        #go to each client and perform the task training  
         for j in range(args.n_clients):
             
+            #update the experience index  and set train scenario
+            train_taskset=models_[j].train_scenario[i]  
+            models_[j].experience_idx = i
+
+            #set newtowrk output of the lat fully connected layer only on output mask 
+            models_[j].model.set_output_mask(i, train_taskset.get_classes())
+            
             #train the teacher model  
-            models_[j].fresh_model = gresnet32(dropout_rate = args.dropout)
-            strategy.pruner.set_gating_masks(models_[j].fresh_model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=strategy.distillation)######  
+            if not args.self_distillation:
+                if args.model == 'gresnet32':
+                    models_[j].fresh_model = gresnet32(dropout_rate = args.dropout)
+                elif args.model == 'gresnet18':
+                    models_[j].fresh_model = gresnet18(num_classes=args.n_classes)
+                elif args.model == 'gresnet18mlp':
+                    models_[j].fresh_model = gresnet18mlp(num_classes=args.n_classes)
+                else:
+                    raise ValueError("Model not found.")
+            else:
+                models_[j].fresh_model = deepcopy(models_[j].model)
+                models_[j].distillation = False
+                models_[j].pruner.set_gating_masks(models_[j].fresh_model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
+        
+
+            models_[j].pruner.set_gating_masks(models_[j].fresh_model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
         
             models_[j].fresh_model.to(args.device)
             train_taskset=models_[j].train_scenario[i] 
@@ -241,12 +262,35 @@ def main():
             models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler, gamma=0.5, last_epoch=-1, verbose=False)
 
             print(f'-.-.-.-.-.-. Start training on experience {i+1} - epochs: {models_[j].train_epochs} .-.-.-.-.-.')
+
+                     
+            models_[j].train()
+            
+       
+           #train the student model
+
+            # Freeze the model for distillation purposes
+            models_[j].distill_model = freeze_model(deepcopy(models_[j].fresh_model))
+            models_[j].distill_model.to(args.device)
+
+            if not args.load_model_from_run: #if the model is new not taken from the a saved network  
+                with torch.no_grad():
+                    models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation)
+
+
+            models_[j].train_epochs = args.epochs_distillation
+            models_[j].distillation = True
+            models_[j].optimizer = torch.optim.AdamW(models_[j].model.parameters(), lr=args.lr_distillation, weight_decay=args.wd_distillation)
+            models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler_distillation, gamma=0.5, last_epoch=-1, verbose=False)
+           
+            print(f"    >>> Start Finetuning epochs: {args.epochs_distillation} <<<")
+                  
+            models_[j].pruner.set_gating_masks(models_[j].model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
+            
+            print(models_[j].distill_model.exp_idx, models_[j].fresh_model.exp_idx, models_[j].model.exp_idx )
+            input()
             
             models_[j].train()
-
-           #train the student model  
-
-            
 
        #aggregate each network 
        # update the global model  
