@@ -237,13 +237,13 @@ def main():
         
     #create the mask  
     central_model.pruner.create_masks(central_model.fresh_model,args.n_experiences)
- 
+    
+    task_mask=central_model.pruner.masks
+
     for i in range(args.n_experiences):
         
 
-        #Get the mask 
-        task_mask=central_model.pruner.masks[i] 
-
+        
         for j in range(args.n_clients):
             
             #update the experience index  and set train scenario
@@ -299,7 +299,7 @@ def main():
             #         models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation)
 
 
-            models_[j].train_epochs = args.epochs_distillation
+            models_[j].train_epochs =2 #args.epochs_distillation
             models_[j].distillation = True
             models_[j].optimizer = torch.optim.AdamW(models_[j].model.parameters(), lr=args.lr_distillation, weight_decay=args.wd_distillation)
             models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler_distillation, gamma=0.5, last_epoch=-1, verbose=False)
@@ -307,14 +307,16 @@ def main():
             print(f"    >>> Start Finetuning epochs: {args.epochs_distillation} <<<")
                   
             #add the pruner masks  
-            models_[j].pruner.masks[i]=task_mask 
-            models_[j].pruner.set_gating_masks(models_[j].model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
+            if i ==0:#trovare un metodo più intelligente forse per capire se è necessario fare lo scarico? 
+                models_[j].pruner.masks[i]=task_mask 
             
+            models_[j].pruner.set_gating_masks(models_[j].model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
+           #verificare quali sono i lernable parameters , che possibilmente , con questa strategia ci sono delle problematiche              
             print(models_[j].distill_model.exp_idx, models_[j].fresh_model.exp_idx, models_[j].model.exp_idx )
             input()
             
             models_[j].train()
-            
+
         #        #weights initialization  
         # for m in self.modules():
         #     if isinstance(m, GatedConv2d):

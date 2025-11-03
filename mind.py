@@ -163,8 +163,7 @@ class MIND():
             self.loss = torch.tensor(0.).to(args.device)
             self.loss_ce = torch.tensor(0.).to(args.device)
             self.loss_distill = torch.tensor(0.).to(args.device)
-            print(self.experience_idx)
-            input()
+            
             self.mb_output = self.model.forward(self.mb_x.to(args.device))
 
 
