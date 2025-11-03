@@ -219,9 +219,31 @@ def main():
 
     print("*"*20, "START TRAINING", "*"*20)
    
+        #go to each client and perform the task training 
+    central_model.experience_idx = i
+         
+    if not args.self_distillation:
+            if args.model == 'gresnet32':
+                central_model.fresh_model = gresnet32(dropout_rate = args.dropout)
+            elif args.model == 'gresnet18':
+                central_model.fresh_model = gresnet18(num_classes=args.n_classes)
+            elif args.model == 'gresnet18mlp':
+                central_model.fresh_model = gresnet18mlp(num_classes=args.n_classes)
+            else:
+                    raise ValueError("Model not found.")
+    else:
+            central_model.fresh_model = deepcopy(central_model.model)
+            central_model.distillation = False
+        
+    #create the mask  
+    central_model.pruner.create_masks(central_model.fresh_model,args.n_experiences)
+ 
     for i in range(args.n_experiences):
         
-       #go to each client and perform the task training  
+
+        #Get the mask 
+        task_mask=central_model.pruner.masks[i] 
+
         for j in range(args.n_clients):
             
             #update the experience index  and set train scenario
@@ -268,14 +290,13 @@ def main():
             
        
            #train the student model
-
-            # Freeze the model for distillation purposes
+           # Freeze the model for distillation purposes
             models_[j].distill_model = freeze_model(deepcopy(models_[j].fresh_model))
             models_[j].distill_model.to(args.device)
 
-            if not args.load_model_from_run: #if the model is new not taken from the a saved network  
-                with torch.no_grad():
-                    models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation)
+            # if not args.load_model_from_run: #if the model is new not taken from the a saved network  
+            #     with torch.no_grad():
+            #         models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation)
 
 
             models_[j].train_epochs = args.epochs_distillation
@@ -285,12 +306,27 @@ def main():
            
             print(f"    >>> Start Finetuning epochs: {args.epochs_distillation} <<<")
                   
+            #add the pruner masks  
+            models_[j].pruner.masks[i]=task_mask 
             models_[j].pruner.set_gating_masks(models_[j].model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
             
             print(models_[j].distill_model.exp_idx, models_[j].fresh_model.exp_idx, models_[j].model.exp_idx )
             input()
             
             models_[j].train()
+            
+        #        #weights initialization  
+        # for m in self.modules():
+        #     if isinstance(m, GatedConv2d):
+        #         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+        #         m.weight.data.normal_(0, math.sqrt(2. / n))
+        #         # m.bias.data.zero_()
+        #     elif isinstance(m, nn.BatchNorm2d):
+        #         m.weight.data.fill_(1)
+        #         m.bias.data.zero_()
+        #     elif isinstance(m, GatedLinear):
+        #         nn.init.kaiming_normal_(m.weight)
+        #         #m.bias.data.zero_()
 
        #aggregate each network 
        # update the global model  

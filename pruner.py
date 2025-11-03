@@ -144,4 +144,35 @@ class Pruner(object):
                         module.mask = (layer_mask == task_id).to(torch.float32).to(module.weight.device)
                 else:#for the teacher  
                     module.mask = torch.ones_like(module.mask).to(torch.float32).to(module.weight.device)
+    
+    def create_masks(self, model, n_tasks):
+        """
+        This method creates all the mask for all the task ids
+        model is the model that creates the model 
+        n_tasks is the number of tasks 
 
+        """
+        n_modules = len([m for m in model.modules()])
+
+        for experience_idx in range(n_tasks):
+            
+            for module_idx, module in enumerate(model.modules()):
+                if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+                    self.masks[module_idx] = self.masks[module_idx].to(module.weight.device)
+
+                    #if it is the last layer, assign to the mask only the weights connecting to the new classes
+                    if module_idx == n_modules-2 and args.dataset != 'CORE50' and not args.self_distillation:
+                        subset = torch.zeros_like(self.masks[module_idx])
+                        if args.extra_classes > 0: #set the last task predictions
+                            subset[experience_idx * (args.classes_per_exp + args.extra_classes):(experience_idx + 1) * (args.classes_per_exp + args.extra_classes), :] = 1
+                        else:
+                            subset[experience_idx*args.classes_per_exp:(experience_idx+1)*args.classes_per_exp, :] = 1
+                        #convert subset to bool
+                        subset = subset.to(torch.bool)
+                    
+                    else: #call the selection function  
+                        subset= self.select_random_weights(module.weight, self.masks[module_idx])
+                    
+                    self.masks[module_idx][subset] = experience_idx ### Set the assigned subset to the same task id  
+
+       
