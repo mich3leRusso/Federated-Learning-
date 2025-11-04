@@ -251,6 +251,35 @@ class GatedCifarResNet(nn.Module):
                 m.weight.data, m.bias.data, m.running_mean, m.running_var = bn_paramz.pop(0)
 
 
+    def pass_weights(self, central_model):
+        for i , (m, m_) in enumerate(zip(central_model.model.modules(), self.modules())):
+            if isinstance(m, GatedConv2d) or isinstance(m ,GatedLinear) or isinstance(m , nn.BatchNorm2d):
+                m_.weight=m.weight
+                      
+        return 
+    
+    
+
+def average_weights(models , module_idx):
+    weights_sum=0.0
+    for i in range(len(models)):
+        weights_sum+=list(models[i].distill_model.modules())[module_idx].weight 
+        
+    weights_sum=weights_sum/len(models)
+
+    return weights_sum
+
+def aggregate_function(central_model, client_models):
+    
+    for i, m in enumerate(central_model.model.modules()):
+        if isinstance(m,  GatedConv2d) or isinstance(m, GatedLinear) or isinstance(m, nn.BatchNorm2d):
+            avg_weights=average_weights(client_models, i)
+            m.weights=avg_weights
+
+
+    return 
+
+
 def gresnet20mnist():
     """Constructs a ResNet-20 model for MNIST."""
     model = GatedCifarResNet(ResNetBasicblock, 20, 1)
