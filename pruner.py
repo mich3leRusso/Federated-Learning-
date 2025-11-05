@@ -75,6 +75,26 @@ class Pruner(object):
         important = ((weights.abs()) >= cutoff_value) * active_weights
         return important
 
+    def pass_weights(self, model, central_model, experience_idx):
+            
+            for i , (m, m_) in enumerate(zip(central_model.model.modules(), model.modules())):
+                
+                if isinstance(m, GatedConv2d) or isinstance(m ,GatedLinear):
+
+                    layer_mask = self.masks[i]
+                    with torch.no_grad():
+                        m_.weight[layer_mask == experience_idx-1]=m.weight[layer_mask == experience_idx-1] #update the weights of the previous experience 
+                        m_.weight.to(m.weight.device)
+                    
+                elif isinstance(m , nn.BatchNorm2d) :
+                    m_.weight=m.weight #update the weights of the previous experience 
+                    m_.weight.to(m.weight.device)
+                
+                else:
+                    continue
+            return 
+        
+        
 
     def prune(self, model, experience_idx, distill_model, self_distillation, masks_created=False):
         n_modules = len([m for m in model.modules()])
@@ -82,8 +102,7 @@ class Pruner(object):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
                #put into the device  
                 self.masks[module_idx] = self.masks[module_idx].to(module.weight.device)
-                # print(self.masks[module_idx] )
-                # input()
+                
                 if not masks_created:
 
                     #if it is the last layer, assign to the mask only the weights connecting to the new classes
@@ -123,6 +142,7 @@ class Pruner(object):
                             n = module.weight.shape[0]*module.weight.shape[1]
                             module.weight[self.masks[module_idx] ==  experience_idx] = torch.randn(module.weight[self.masks[module_idx] == experience_idx].shape).to(module.weight.device)*math.sqrt(2./n)
 
+   
     def dezero(self, model):
         for module_idx, module in enumerate(model.modules()):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):

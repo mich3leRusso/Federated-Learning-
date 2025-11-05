@@ -256,30 +256,28 @@ class GatedCifarResNet(nn.Module):
             layer_mask = self.masks[i]
             if isinstance(m, GatedConv2d) or isinstance(m ,GatedLinear) or isinstance(m , nn.BatchNorm2d):
                 m_.weight[layer_mask == self.experience_idx-1]=m.weight[layer_mask == self.experience_idx-1] #update the weights of the previous experience 
+                m_.weight.to(m.weight.device)
               
         return 
     
     
 
-def average_weights(models , module_idx):
-    weights_sum=0.0
-    for i in range(len(models)):
-        weights_sum+=list(models[i].model.modules())[module_idx].weight 
-        
-    weights_sum=weights_sum/len(models)
 
-    return weights_sum
+def average_weights(models, module_idx):
+    # Accumulate weights without tracking gradients
+    with torch.no_grad():
+        weights = [list(m.model.modules())[module_idx].weight.data for m in models]
+        avg_weights = torch.mean(torch.stack(weights), dim=0)
+    return avg_weights
+
 
 def aggregate_function(central_model, client_models):
-    
-    for i, m in enumerate(central_model.model.modules()):
-        if isinstance(m,  GatedConv2d) or isinstance(m, GatedLinear) or isinstance(m, nn.BatchNorm2d):
-            avg_weights=average_weights(client_models, i)
-            m.weights=avg_weights
-
-
-    return 
-
+    with torch.no_grad():  # no gradients during aggregation
+        for i, m in enumerate(central_model.model.modules()):
+            if isinstance(m, (GatedConv2d, GatedLinear, nn.BatchNorm2d)):
+                avg_weights = average_weights(client_models, i)
+                m.weight.data.copy_(avg_weights)  # ✅ in-place data copy (safe)
+    return central_model
 
 def gresnet20mnist():
     """Constructs a ResNet-20 model for MNIST."""

@@ -49,6 +49,7 @@ class MIND():
         return self.criterion(self.mb_output, self.mb_y.to(args.device))
 
 
+
     def get_distill_loss_JS(self):
         """ Distillation loss. (jensen-shannon) """
         with torch.no_grad():

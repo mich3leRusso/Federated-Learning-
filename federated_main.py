@@ -296,20 +296,18 @@ def main():
 
             # #add the new weights
             if i!=0:
-                models_[j].model.pass_weights(central_model)
+                models_[j].pruner.pass_weights(models_[j].model, central_model,models_[j].experience_idx)
             
             #add the pruner masks  
             if i ==0:
                 models_[j].pruner.masks=task_mask 
-
-
 
                 if not args.load_model_from_run: #if the model is new not taken from the a saved network  
                     with torch.no_grad():
                         models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation, True )
 
 
-            models_[j].train_epochs =20 #args.epochs_distillation
+            models_[j].train_epochs =2 #args.epochs_distillation
             models_[j].distillation = True
             models_[j].optimizer = torch.optim.AdamW(models_[j].model.parameters(), lr=args.lr_distillation, weight_decay=args.wd_distillation)
             models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler_distillation, gamma=0.5, last_epoch=-1, verbose=False)
@@ -325,7 +323,7 @@ def main():
             
             models_[j].train()
 
-        aggregate_function(central_model,models_ )
+        central_model=aggregate_function(central_model,models_ )
 
     
 if __name__ == "__main__":
