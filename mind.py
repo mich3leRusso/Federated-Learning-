@@ -97,7 +97,7 @@ class MIND():
                                                                self.distillation,
                                                                plot=True)
 
-                    f.write(f"{self.experience_idx},{self.distillation},{epoch},{acc_train:.4f}\n")
+                    f.write(f"{self.experience_idx},{self.distillation},{epoch},{acc_train:.4f}, loss: {loss_ce:.4f} loss_distill {loss_distill:.4f}  \n")
                 #print loss
                 #print(f"loss_ce: {loss_ce:.4f}, loss_distill: {loss_distill:.4f}")
 
@@ -147,6 +147,7 @@ class MIND():
 
         # to ripristinate the model
         base_model = deepcopy(self.model)
+        
         # freeze the model
         freeze_model(base_model)
 

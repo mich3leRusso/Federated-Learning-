@@ -49,8 +49,8 @@ class Pruner(object):
         for module_idx, (module, old_module) in enumerate(zip(model.modules(), old_model.modules())):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
                 layer_mask = self.masks[module_idx]
-                # if distillation:
-                if args.self_distillation and not distillation:
+               
+                if args.self_distillation and not distillation:#if you have the self distillation process  
                     module.weight[layer_mask != -1] = old_module.weight[layer_mask != -1]
                 else:
                     module.weight[layer_mask != experience_idx] = old_module.weight[layer_mask != experience_idx]
@@ -76,41 +76,49 @@ class Pruner(object):
         return important
 
 
-    def prune(self, model, experience_idx, distill_model, self_distillation):
+    def prune(self, model, experience_idx, distill_model, self_distillation, masks_created=False):
         n_modules = len([m for m in model.modules()])
         for module_idx, (module, distill_module) in enumerate(zip(model.modules(), distill_model.modules())):
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
                #put into the device  
                 self.masks[module_idx] = self.masks[module_idx].to(module.weight.device)
+                # print(self.masks[module_idx] )
+                # input()
+                if not masks_created:
 
-                #if it is the last layer, assign to the mask only the weights connecting to the new classes
-                if module_idx == n_modules-2 and args.dataset != 'CORE50' and not args.self_distillation:
-                    subset = torch.zeros_like(self.masks[module_idx])
-                    if args.extra_classes > 0:
-                        subset[experience_idx * (args.classes_per_exp + args.extra_classes):(experience_idx + 1) * (args.classes_per_exp + args.extra_classes), :] = 1
+                    #if it is the last layer, assign to the mask only the weights connecting to the new classes
+                    if module_idx == n_modules-2 and args.dataset != 'CORE50' and not args.self_distillation:
+                        subset = torch.zeros_like(self.masks[module_idx])
+                        if args.extra_classes > 0:
+                            subset[experience_idx * (args.classes_per_exp + args.extra_classes):(experience_idx + 1) * (args.classes_per_exp + args.extra_classes), :] = 1
+                        else:
+                            subset[experience_idx*args.classes_per_exp:(experience_idx+1)*args.classes_per_exp, :] = 1
+                        #convert subset to bool
+                        subset = subset.to(torch.bool)
                     else:
-                        subset[experience_idx*args.classes_per_exp:(experience_idx+1)*args.classes_per_exp, :] = 1
-                    #convert subset to bool
-                    subset = subset.to(torch.bool)
-                else:
-                    if args.self_distillation:#praticamente mai 
-                        subset= self.most_important_weights_mask(module.weight, self.masks[module_idx])
-                    else:
-                        subset= self.select_random_weights(module.weight, self.masks[module_idx])
-                self.masks[module_idx][subset] = experience_idx ### Set the assigned subset to the same task id  
+                        if args.self_distillation:#praticamente mai 
+                            subset= self.most_important_weights_mask(module.weight, self.masks[module_idx])
+                        else:
+                            subset= self.select_random_weights(module.weight, self.masks[module_idx])
+                    self.masks[module_idx][subset] = experience_idx ### Set the assigned subset to the same task id  
 
-                #when self distillation, set fresh model weights as starting point
-                if self_distillation:#questo parametro è il candidato per la modifica 2  
-                    module.weight[self.masks[module_idx] == experience_idx] = distill_module.weight[self.masks[module_idx] == experience_idx]
-                
+                    #when self distillation, set fresh model weights as starting point
+                    if self_distillation:
+                        module.weight[self.masks[module_idx] == experience_idx] = distill_module.weight[self.masks[module_idx] == experience_idx]
+                    
 
-                # Set unassigned weights to 0 
-                module.weight[self.masks[module_idx] == -1] = 0.0
+                    # Set unassigned weights to 0 
+                    module.weight[self.masks[module_idx] == -1] = 0.0
+
                 if not self_distillation:
-                    if not args.weight_sharing:
+
+                    if not args.weight_sharing: #entra qui perchè c'è il weight sharing sempre disattivo 
+                        
+                        #random initialization 
                         if isinstance(module, nn.Conv2d):
                             n = module.kernel_size[0] * module.kernel_size[1] * module.out_channels
                             module.weight[self.masks[module_idx] == experience_idx] = torch.randn(module.weight[self.masks[module_idx] == experience_idx].shape).to(module.weight.device)*math.sqrt(2./n)
+                            
                         if isinstance(module, nn.Linear):
                             n = module.weight.shape[0]*module.weight.shape[1]
                             module.weight[self.masks[module_idx] ==  experience_idx] = torch.randn(module.weight[self.masks[module_idx] == experience_idx].shape).to(module.weight.device)*math.sqrt(2./n)
@@ -167,6 +175,7 @@ class Pruner(object):
                             subset[experience_idx * (args.classes_per_exp + args.extra_classes):(experience_idx + 1) * (args.classes_per_exp + args.extra_classes), :] = 1
                         else:
                             subset[experience_idx*args.classes_per_exp:(experience_idx+1)*args.classes_per_exp, :] = 1
+                        
                         #convert subset to bool
                         subset = subset.to(torch.bool)
                     

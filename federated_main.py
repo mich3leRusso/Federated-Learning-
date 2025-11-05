@@ -277,7 +277,7 @@ def main():
             models_[j].train_dataloader=DataLoader(train_taskset, batch_size=args.bsize, shuffle=True)
 
             # instantiate optimizer
-            models_[j].train_epochs = 3# args.epochs
+            models_[j].train_epochs = 1# args.epochs
         
             models_[j].distillation = False
             models_[j].optimizer = torch.optim.AdamW(models_[j].fresh_model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -289,55 +289,43 @@ def main():
             models_[j].train()
             
        
-           #train the student model
-           # Freeze the model for distillation purposes
-            models_[j].distill_model = freeze_model(deepcopy(models_[j].fresh_model))
+            #train the student model
+            # Freeze the model for distillation purposes
+            models_[j].distill_model = freeze_model(deepcopy(models_[j].fresh_model)) #model that will be used for the distillation 
             models_[j].distill_model.to(args.device)
 
-            # if not args.load_model_from_run: #if the model is new not taken from the a saved network  
-            #     with torch.no_grad():
-            #         models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation)
+            # #add the new weights
+            if i!=0:
+                models_[j].model.pass_weights(central_model)
+            
+            #add the pruner masks  
+            if i ==0:
+                models_[j].pruner.masks=task_mask 
 
 
-            models_[j].train_epochs =5 #args.epochs_distillation
+
+                if not args.load_model_from_run: #if the model is new not taken from the a saved network  
+                    with torch.no_grad():
+                        models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation, True )
+
+
+            models_[j].train_epochs =20 #args.epochs_distillation
             models_[j].distillation = True
             models_[j].optimizer = torch.optim.AdamW(models_[j].model.parameters(), lr=args.lr_distillation, weight_decay=args.wd_distillation)
             models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler_distillation, gamma=0.5, last_epoch=-1, verbose=False)
            
-            print(f"    >>> Start Finetuning epochs: {args.epochs_distillation} <<<")
             
-            #add the new weights
-            if i!=0:
-                models_[j].distill_model.pass_weights(central_model)
-            #add the pruner masks  
-            if i ==0:#trovare un metodo più intelligente forse per capire se è necessario fare lo scarico? 
-                models_[j].pruner.masks[i]=task_mask 
-            
+
+
             models_[j].pruner.set_gating_masks(models_[j].model, models_[j].experience_idx, weight_sharing=args.weight_sharing, distillation=models_[j].distillation)
-           #verificare quali sono i lernable parameters , che possibilmente , con questa strategia ci sono delle problematiche     
-           #capure con  più epoche se è funzionante il sistema
-           # creare un'aggregation function          
+            #verificare quali sono i lernable parameters , che possibilmente , con questa strategia ci sono delle problematiche     
+                    
+            print(f"    >>> Start Finetuning epochs: {args.epochs_distillation} <<<")
             
             
             models_[j].train()
 
         aggregate_function(central_model,models_ )
-
-        #        #weights initialization  
-        # for m in self.modules():
-        #     if isinstance(m, GatedConv2d):
-        #         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        #         m.weight.data.normal_(0, math.sqrt(2. / n))
-        #         # m.bias.data.zero_()
-        #     elif isinstance(m, nn.BatchNorm2d):
-        #         m.weight.data.fill_(1)
-        #         m.bias.data.zero_()
-        #     elif isinstance(m, GatedLinear):
-        #         nn.init.kaiming_normal_(m.weight)
-        #         #m.bias.data.zero_()
-
-       #aggregate each network 
-       # update the global model  
 
     
 if __name__ == "__main__":
