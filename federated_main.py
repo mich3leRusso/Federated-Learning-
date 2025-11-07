@@ -261,7 +261,7 @@ def main():
        central_model.experience_idx=i 
         
        if not args.load_model_from_run:
-        
+
         for j in range(args.n_clients):
             
             #update the experience index  and set train scenario
@@ -295,7 +295,7 @@ def main():
             models_[j].train_dataloader=DataLoader(train_taskset, batch_size=args.bsize, shuffle=True)
 
             # instantiate optimizer
-            models_[j].train_epochs = 1# args.epochs
+            models_[j].train_epochs = args.epochs
         
             models_[j].distillation = False
             models_[j].optimizer = torch.optim.AdamW(models_[j].fresh_model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -325,7 +325,7 @@ def main():
                         models_[j].pruner.prune(models_[j].model, models_[j].experience_idx, models_[j].distill_model, args.self_distillation, True )
 
 
-            models_[j].train_epochs =2 #args.epochs_distillation
+            models_[j].train_epochs =args.epochs_distillation
             models_[j].distillation = True
             models_[j].optimizer = torch.optim.AdamW(models_[j].model.parameters(), lr=args.lr_distillation, weight_decay=args.wd_distillation)
             models_[j].scheduler = torch.optim.lr_scheduler.MultiStepLR(models_[j].optimizer, milestones=args.scheduler_distillation, gamma=0.5, last_epoch=-1, verbose=False)

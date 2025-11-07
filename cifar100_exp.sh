@@ -14,7 +14,7 @@ source /archive/apps/miniconda/miniconda3/py312_2/etc/profile.d/conda.sh
 # Conda activate
 conda activate MIND
 
-class_augmentation=2  #multiplier of the number of classes
+class_augmentation=1  #multiplier of the number of classes
 aug_type="rotations"   #rotations, negative, mix
 rotations=0            #1 if we want to include test time data augmentation, 0 otherwise
 n_aug=1             #maximal number of test time data augmentation in which we are interested in
