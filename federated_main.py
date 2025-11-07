@@ -55,6 +55,13 @@ def main():
     else:
         raise ValueError("Model not found.")
 
+
+    if args.load_model_from_run:
+        model.load_state_dict(torch.load(f"logs/{args.load_model_from_run}/checkpoints/weights.pt"))
+        # load bn weights as pkles 
+        bn_weights = pkl.load(open(f"logs/{args.load_model_from_run}/checkpoints/bn_weights.pkl", "rb"))    
+        model.bn_weights = bn_weights
+
     model.to(args.device)
 
     central_model=MIND(model)
@@ -215,13 +222,14 @@ def main():
         class_order=class_order,
         transformations=transform_2)
 
+
     print(f"Number of tasks: {test_scenario.nb_tasks}.")
 
     print("*"*20, "START TRAINING", "*"*20)
    
-        #go to each client and perform the task training 
-    central_model.experience_idx = i
-         
+
+    central_model.test_scenario=test_scenario
+
     if not args.self_distillation:
             if args.model == 'gresnet32':
                 central_model.fresh_model = gresnet32(dropout_rate = args.dropout)
@@ -240,9 +248,19 @@ def main():
     
     task_mask=central_model.pruner.masks
 
+    if args.load_model_from_run:
+        central_model.pruner.masks = torch.load(f"logs/{args.load_model_from_run}/checkpoints/masks.pt")
+    else:
+            #create the mask  
+        central_model.pruner.create_masks(central_model.fresh_model,args.n_experiences)
+        
+        task_mask=central_model.pruner.masks
+
     for i in range(args.n_experiences):
         
-
+       central_model.experience_idx=i 
+        
+       if not args.load_model_from_run:
         
         for j in range(args.n_clients):
             
@@ -323,10 +341,34 @@ def main():
             
             models_[j].train()
 
-        central_model=aggregate_function(central_model,models_ )
+
+        if not args.load_model_from_run:
+            central_model=aggregate_function(central_model,models_ )
+
+        # set gating mask
+        central_model.pruner.set_gating_masks(central_model.model, central_model.experience_idx, weight_sharing=args.weight_sharing, distillation=True)
+        
+        with torch.no_grad():
+                    
+                    # write accuracy on the test set
+                    total_acc = 0
+                    task_acc = 0
+                    accuracy_e = 0
+                    total_acc, task_acc, accuracy_taw = test(central_model, central_model.test_scenario[:i+1])
+
+                    with open(f"logs/{args.run_name}/results/total_acc.csv", "a") as f:
+                        f.write(f"{strategy.experience_idx},{total_acc:.4f}\n")
+                    with open(f"logs/{args.run_name}/results/total_acc_taw.csv", "a") as f:
+                        f.write(f"{strategy.experience_idx},{accuracy_taw:.4f}\n")
+
+                    # save the model and the masks
+                    if not args.load_model_from_run:
+                        torch.save(strategy.model.state_dict(), f"logs/{args.run_name}/checkpoints/weights.pt")
+                        torch.save(strategy.pruner.masks, f"logs/{args.run_name}/checkpoints/masks.pt")
+                        pkl.dump(strategy.model.bn_weights, open(f"logs/{args.run_name}/checkpoints/bn_weights.pkl", "wb"))
+
 
     
 if __name__ == "__main__":
 
     main()
-
