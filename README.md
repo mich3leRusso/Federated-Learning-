@@ -6,4 +6,4 @@ After local training, clients send only model updates such as learned weights or
 
 This approach enables collaborative learning while preserving data privacy and reducing the risks associated with centralized data storage. 
 
-![Classical federated learning architecture](/images/FL_Scheme.png)
+![Classical federated learning architecture](/images/FL_Scheme.png =100x20)
