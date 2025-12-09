@@ -1,4 +1,8 @@
-In this repository we readapt [MIND](https://arxiv.org/abs/2312.02916) paper, which is a replay free task increamental learning paradigm, to the federated learning task.
+# FIL
+
+We present FIL a model that takes inspiration from  [MIND](https://arxiv.org/abs/2312.02916) paper, which is a replay free task increamental learning paradigm, to the federated learning task.
+
+## Why FIL?
 
 Federated Learning is a distributed machine learning paradigm in which multiple nodes (clients) collaboratively train a shared global model without sharing their raw data. Instead of centralizing data from different sources, each client keeps its local data private and performs training independently.
 
@@ -14,4 +18,8 @@ At each incremental step, clients train a local model using only the data of the
 
 ![New architecture](/images/Federated_scheme.png)
 
-Federated class-incremental learning introduces several challenges beyond standard federated learning. In particular, the model is affected by catastrophic forgetting, as learning new classes may significantly degrade performance on previously learned ones. This issue is further exacerbated by the non-IID distribution of classes across clients, the absence of past data, and the aggregation of heterogeneous updates originating from different tasks and training stages.
+Federated class-incremental learning introduces several challenges beyond standard federated learning. In particular, the model is affected by catastrophic forgetting, as learning new classes may significantly degrade performance on previously learned ones. This issue is further exacerbated by the non-IID distribution of classes across clients, the absence of past data, and the aggregation of heterogeneous updates originating from different tasks and training stages
+
+Our approach leverages knowledge distillation from previous model states to preserve learned representations while acquiring new classes, without requiring access to old data or shared memory buffers. By integrating this strategy into the federated setting, we are able to mitigate catastrophic forgetting and stabilize training across incremental tasks and distributed clients, while maintaining privacy and scalability.
+
+# How to use?
