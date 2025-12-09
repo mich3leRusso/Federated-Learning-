@@ -13,3 +13,5 @@ When different clients are exposed to different learning tasks or class subsets 
 At each incremental step, clients train a local model using only the data of their current task. Once local training is completed, the updated model parameters are sent to a central server, where they are aggregated to form a new global model. This global model is then redistributed to the clients and used as the starting point for training on the next novel task. The process repeats as new classes become available over time.
 
 ![New architecture](/images/Federated_scheme.png)
+
+Federated class-incremental learning introduces several challenges beyond standard federated learning. In particular, the model is affected by catastrophic forgetting, as learning new classes may significantly degrade performance on previously learned ones. This issue is further exacerbated by the non-IID distribution of classes across clients, the absence of past data, and the aggregation of heterogeneous updates originating from different tasks and training stages.
