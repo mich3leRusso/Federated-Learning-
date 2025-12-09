@@ -1,6 +1,6 @@
 # FIL
 
-We present FIL a model that takes inspiration from  [MIND](https://arxiv.org/abs/2312.02916) paper, which is a replay free task increamental learning paradigm, to the federated learning task.
+We present **FIL** a model for **Federated class Incremental Learning without forgetting** that takes inspiration from  [MIND](https://arxiv.org/abs/2312.02916) paper, which is a replay free task increamental learning paradigm,.
 
 ## Why FIL?
 
