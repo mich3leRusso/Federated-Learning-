@@ -1,1 +1,1 @@
-
+We propose a federated class-incremental learning approach in which a global model is trained collaboratively across multiple decentralized clients while progressively learning new classes over time. The learning process is organized into a sequence of incremental tasks, where each task introduces a previously unseen set of classes. Clients retain access only to their local data corresponding to the current task, and past data are unavailable due to storage, privacy, or regulatory constraints.
