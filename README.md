@@ -22,4 +22,14 @@ Federated class-incremental learning introduces several challenges beyond standa
 
 Our approach leverages knowledge distillation from previous model states to preserve learned representations while acquiring new classes, without requiring access to old data or shared memory buffers. By integrating this strategy into the federated setting, we are able to mitigate catastrophic forgetting and stabilize training across incremental tasks and distributed clients, while maintaining privacy and scalability.
 
+**FIL** is a **Federated Class-Incremental Learning (FCIL)** approach inspired by **MIND**  
+[*Distilled Replay-Free Class-Incremental Learning*](https://arxiv.org/pdf/2312.02916).
+
+FIL addresses the challenge of **catastrophic forgetting** in class-incremental settings **without relying on data replay**. The method combines **knowledge distillation** and **parameter isolation** to preserve previously learned knowledge while incrementally learning new classes.
+![MIND](images/MIND.png)
+
+Despite using a **compact and energy-efficient architecture**, FIL achieves performance comparable to significantly larger models. This makes it particularly suitable for **federated learning scenarios**, where communication efficiency, privacy, and limited computational resources are critical constraints. To further enhance model performance, we introduce a **novel, model-agnostic Test-Time Data Augmentation (TTDA) technique**.  
+This approach improves robustness and predictive accuracy at inference time without modifying the training procedure or the underlying model architecture.
+ 
+
 # How to use?
