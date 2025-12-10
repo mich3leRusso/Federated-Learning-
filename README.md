@@ -26,6 +26,7 @@ Our approach leverages knowledge distillation from previous model states to pres
 [*Distilled Replay-Free Class-Incremental Learning*](https://arxiv.org/pdf/2312.02916).
 
 FIL addresses the challenge of **catastrophic forgetting** in class-incremental settings **without relying on data replay**. The method combines **knowledge distillation** and **parameter isolation** to preserve previously learned knowledge while incrementally learning new classes.
+
 ![MIND](images/MIND.jpeg)
 
 Despite using a **compact and energy-efficient architecture**, FIL achieves performance comparable to significantly larger models. This makes it particularly suitable for **federated learning scenarios**, where communication efficiency, privacy, and limited computational resources are critical constraints. To further enhance model performance, we introduce a **novel, model-agnostic Test-Time Data Augmentation (TTDA) technique**.  
